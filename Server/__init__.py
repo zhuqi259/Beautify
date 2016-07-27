@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'zhuqi259'
 
-from flask import Flask, jsonify, make_response
+from flask import Flask, jsonify, make_response, url_for
 from flask_sqlalchemy import SQLAlchemy
 import random
 
@@ -47,16 +47,27 @@ class User(db.Model):
         }
 
 
+def make_public_user(_user):
+    new_user = {}
+    for field in _user:
+        if field == 'id':
+            new_user['uri'] = url_for('get_user', user_id=_user['id'], _external=True)
+            new_user['photo'] = url_for('static', filename='img/' + _user['id'] + '.jpg', _external=True)
+        else:
+            new_user[field] = _user[field]
+    return new_user
+
+
 @app.route('/api/v1.0/users', methods=['GET'])
 def get_users():
     _users = [u.serialize() for u in User.query.all()]
-    return jsonify({'users': _users})
+    return jsonify({'users': map(make_public_user, _users)})
 
 
 @app.route('/api/v1.0/users/<user_id>', methods=['GET'])
 def get_user(user_id):
     _user = User.query.get_or_404(user_id)
-    return jsonify({'user': _user.serialize()})
+    return jsonify({'user': make_public_user(_user.serialize())})
 
 
 @app.route('/api/v1.0/users/random', methods=['GET'])
@@ -65,13 +76,13 @@ def get_user_random():
     random_choice = random.randint(1, count)
     users_one = User.query.paginate(random_choice, 1).items
     _user = users_one[0]
-    return jsonify({'user': _user.serialize()})
+    return jsonify({'user': make_public_user(_user.serialize())})
 
 
 @app.route('/api/v1.0/users/pages', methods=['GET'])
 def get_users_pages():
     _users = [u.serialize() for u in User.query.paginate(1, 10).items]
-    return jsonify({'users': _users})
+    return jsonify({'users': map(make_public_user, _users)})
 
 
 @app.errorhandler(404)
