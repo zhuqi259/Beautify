@@ -62,6 +62,10 @@ class Beauty(db.Model):
         return '<Beauty %r>' % self.user.id
 
 
+__page_number__ = 1
+__page_size__ = 10
+
+
 def make_public_user(_user):
     new_user = {}
     for field in _user:
@@ -97,7 +101,9 @@ def get_user_random():
 
 @app.route('/api/v1.0/users/pages', methods=['GET'])
 def get_users_pages():
-    _users = [u.serialize() for u in User.query.paginate(1, 10).items]
+    page_number = int(request.args.get('page_number', __page_number__))
+    page_size = int(request.args.get('page_size', __page_size__))
+    _users = [u.serialize() for u in User.query.paginate(page_number, page_size).items]
     return jsonify({'users': map(make_public_user, _users)})
 
 
@@ -109,7 +115,10 @@ def get_beauties():
 
 @app.route('/api/v1.0/beauties/pages', methods=['GET'])
 def get_beauties_pages():
-    _users = [b.user.serialize() for b in Beauty.query.order_by(Beauty.star.desc()).paginate(1, 10).items]
+    page_number = int(request.args.get('page_number', __page_number__))
+    page_size = int(request.args.get('page_size', __page_size__))
+    _users = [b.user.serialize() for b in
+              Beauty.query.order_by(Beauty.star.desc()).paginate(page_number, page_size).items]
     return jsonify({'users': map(make_public_user, _users)})
 
 
@@ -127,6 +136,11 @@ def create_beauty():
         b.star += 1
     db.session.commit()
     return jsonify({'status': '200'})
+
+
+@app.errorhandler(400)
+def param_error(error):
+    return make_response(jsonify({'error': 'Param Error'}), 400)
 
 
 @app.errorhandler(404)
