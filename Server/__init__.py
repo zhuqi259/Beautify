@@ -52,6 +52,12 @@ def get_users():
     return jsonify({'users': _users})
 
 
+@app.route('/api/v1.0/users/pages', methods=['GET'])
+def get_users_pages():
+    _users = [u.serialize() for u in User.query.paginate(1, 10).items]
+    return jsonify({'users': _users})
+
+
 @app.errorhandler(404)
 def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
