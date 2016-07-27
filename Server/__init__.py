@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'zhuqi259'
 
-from flask import Flask, jsonify, make_response, url_for
+from flask import Flask, jsonify, make_response, url_for, request, abort
 from flask_sqlalchemy import SQLAlchemy
 import random
 
@@ -47,10 +47,26 @@ class User(db.Model):
         }
 
 
+class Beauty(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    star = db.Column(db.Integer)
+
+    user_id = db.Column(db.String(20), db.ForeignKey('user.id'))
+    user = db.relationship('User', backref=db.backref('users', lazy='dynamic'))
+
+    def __init__(self, _user, _star=1):
+        self.user = _user
+        self.star = _star
+
+    def __repr__(self):
+        return '<Beauty %r>' % self.user.id
+
+
 def make_public_user(_user):
     new_user = {}
     for field in _user:
         if field == 'id':
+            new_user['id'] = _user['id']
             new_user['uri'] = url_for('get_user', user_id=_user['id'], _external=True)
             new_user['photo'] = url_for('static', filename='img/' + _user['id'] + '.jpg', _external=True)
         else:
@@ -85,6 +101,34 @@ def get_users_pages():
     return jsonify({'users': map(make_public_user, _users)})
 
 
+@app.route('/api/v1.0/beauties', methods=['GET'])
+def get_beauties():
+    _users = [b.user.serialize() for b in Beauty.query.order_by(Beauty.star.desc()).all()]
+    return jsonify({'users': map(make_public_user, _users)})
+
+
+@app.route('/api/v1.0/beauties/pages', methods=['GET'])
+def get_beauties_pages():
+    _users = [b.user.serialize() for b in Beauty.query.order_by(Beauty.star.desc()).paginate(1, 10).items]
+    return jsonify({'users': map(make_public_user, _users)})
+
+
+@app.route('/api/v1.0/beauties', methods=['POST'])
+def create_beauty():
+    if not request.json or not 'user_id' in request.json:
+        abort(400)
+    user_id = request.json['user_id']
+    _user = User.query.get_or_404(user_id)
+    b = Beauty.query.filter_by(user_id=user_id).first()
+    if b is None:
+        b = Beauty(_user)
+        db.session.add(b)
+    else:
+        b.star += 1
+    db.session.commit()
+    return jsonify({'status': '200'})
+
+
 @app.errorhandler(404)
 def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
@@ -113,7 +157,8 @@ if __name__ == '__main__':
 
     for user in users:
         attrs = user.split(",")
-        someone = User(attrs[0], attrs[1], attrs[2], attrs[3], attrs[4], attrs[5], attrs[6], attrs[7])
-        db.session.add(someone)
+        if attrs[2] == '1':
+            someone = User(attrs[0], attrs[1], attrs[2], attrs[3], attrs[4], attrs[5], attrs[6], attrs[7])
+            db.session.add(someone)
 
     db.session.commit()
