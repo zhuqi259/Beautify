@@ -3,6 +3,7 @@ __author__ = 'zhuqi259'
 
 from flask import Flask, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
+import random
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/hadoop/db/student.db'
@@ -50,6 +51,21 @@ class User(db.Model):
 def get_users():
     _users = [u.serialize() for u in User.query.all()]
     return jsonify({'users': _users})
+
+
+@app.route('/api/v1.0/users/<user_id>', methods=['GET'])
+def get_user(user_id):
+    _user = User.query.get_or_404(user_id)
+    return jsonify({'user': _user.serialize()})
+
+
+@app.route('/api/v1.0/users/random', methods=['GET'])
+def get_user_random():
+    count = User.query.count()
+    random_choice = random.randint(1, count)
+    users_one = User.query.paginate(random_choice, 1).items
+    _user = users_one[0]
+    return jsonify({'user': _user.serialize()})
 
 
 @app.route('/api/v1.0/users/pages', methods=['GET'])
