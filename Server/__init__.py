@@ -6,7 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 import random
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/hadoop/db/student.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///F:/workspace/python/db/student.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db = SQLAlchemy(app)
 
@@ -154,7 +154,7 @@ if __name__ == '__main__':
     db.create_all()
 
     # 初始化数据
-    __storage_file__ = "/home/hadoop/db/jlu_student.csv"
+    __storage_file__ = "F:/workspace/python/db/jlu_student.csv"
 
 
     def read_data(filename):
